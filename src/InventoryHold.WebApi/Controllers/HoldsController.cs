@@ -16,6 +16,11 @@ public class HoldsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(HoldResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    /// <summary>
+    /// Creates a new hold.
+    /// </summary>
     public async Task<IActionResult> Create([FromBody] HoldRequest req)
     {
         try
@@ -30,6 +35,11 @@ public class HoldsController : ControllerBase
     }
 
     [HttpGet("{holdId}")]
+    [ProducesResponseType(typeof(HoldResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    /// <summary>
+    /// Retrieves a hold by its ID.
+    /// </summary>
     public async Task<IActionResult> Get(string holdId)
     {
         var res = await _service.GetHold(holdId);
@@ -38,6 +48,11 @@ public class HoldsController : ControllerBase
     }
 
     [HttpDelete("{holdId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    /// <summary>
+    /// Releases a hold by its ID.
+    /// </summary>
     public async Task<IActionResult> Release(string holdId)
     {
         try

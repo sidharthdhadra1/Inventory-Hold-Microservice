@@ -191,7 +191,7 @@ If Visual Studio shows missing package assets, run the included script `scripts/
 See AI-USAGE.md for details about AI assistance used.
 
 
-🐳 11. Docker Setup
+🐳 12. Docker Setup
 docker-compose must include:
 API
 MongoDB

@@ -41,7 +41,22 @@ builder.Services.AddSingleton<HoldService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Inventory Hold API",
+        Version = "v1",
+        Description = "API for creating and managing inventory holds"
+    });
+
+    // try to include XML comments when available
+    var xmlFile = System.IO.Path.ChangeExtension(System.Reflection.Assembly.GetEntryAssembly()?.Location ?? "", ".xml");
+    if (System.IO.File.Exists(xmlFile))
+    {
+        options.IncludeXmlComments(xmlFile);
+    }
+});
 
 var app = builder.Build();
 
@@ -50,16 +65,29 @@ app.UseMiddleware<InventoryHold.WebApi.Middleware.ExceptionHandlingMiddleware>()
 app.UseMiddleware<InventoryHold.WebApi.Middleware.RequestLoggingMiddleware>();
 
 // seed data (only for mongo path)
-if (!useEf)
+try
 {
-    await SeedData.EnsureSeed(db);
+    if (!useEf)
+    {
+        await SeedData.EnsureSeed(db);
+    }
+    else
+    {
+        // seed EF DB
+        using var scope = app.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<InventoryHold.Infrastructure.EF.InventoryDbContext>();
+        await InventoryHold.Infrastructure.EF.SeedData.EnsureSeed(ctx);
+    }
 }
-else
+catch (MongoDB.Driver.MongoConnectionException mex)
 {
-    // seed EF DB
-    using var scope = app.Services.CreateScope();
-    var ctx = scope.ServiceProvider.GetRequiredService<InventoryHold.Infrastructure.EF.InventoryDbContext>();
-    await InventoryHold.Infrastructure.EF.SeedData.EnsureSeed(ctx);
+    var logger = app.Services.GetService<ILogger<Program>>();
+    logger?.LogWarning(mex, "Could not connect to MongoDB during startup seed. The application will continue and retry operations at runtime.");
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetService<ILogger<Program>>();
+    logger?.LogError(ex, "Unexpected error during startup seeding. The application will continue.");
 }
 
 app.UseSwagger();
